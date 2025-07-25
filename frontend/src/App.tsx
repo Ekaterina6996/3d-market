@@ -1,23 +1,30 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import AuthPage from './pages/AuthPage';
-import CustomerDashboard from './pages/CustomerDashboard';
+import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import Layout from './components/Layout';
+import HomePage from './pages/HomePage';
+import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
+import ProjectCreatePage from './pages/ProjectCreatePage';
+import ProjectsPage from './pages/ProjectsPage';
 import MakerDashboard from './pages/MakerDashboard';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/auth" element={!token ? <AuthPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/dashboard" element={
-          token ? (userRole === 'Customer' ? <CustomerDashboard /> : <MakerDashboard />) : <Navigate to="/auth" />
-        } />
-        <Route path="*" element={<Navigate to="/dashboard" />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/projects/new" element={<ProjectCreatePage />} />
+          <Route path="/maker" element={<MakerDashboard />} />
+        </Routes>
+        <Toaster position="top-right" />
+      </Layout>
+    </AuthProvider>
   );
 }
 

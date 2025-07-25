@@ -1,87 +1,70 @@
 services:
-  # API Gateway
-  api-gateway:
-    build: ./api-gateway
-    container_name: api-gateway
-    ports:
-      - "3000:3000"
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # User Service
-  user-service:
-    build: ./services/user-service
-    container_name: user-service
-    environment:
-      DATABASE_URL: "postgresql://user:password@user-db:5432/users"
-      JWT_SECRET: "YOUR_SUPER_SECRET_KEY_REPLACE_IT"
-    depends_on:
-      - user-db
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # User Service Database
-  user-db:
-    image: postgres:14-alpine
-    container_name: user-db
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: users
-    volumes:
-      - user-db-data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Project Service
-  project-service:
-    build: ./services/project-service
-    container_name: project-service
-    environment:
-      DATABASE_URL: "postgresql://user:password@project-db:5432/projects"
-      JWT_SECRET: "YOUR_SUPER_SECRET_KEY_REPLACE_IT"
-    volumes:
-      - uploads:/app/uploads
-    depends_on:
-      - project-db
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Project Service Database
-  project-db:
-    image: postgres:14-alpine
-    container_name: project-db
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: projects
-    volumes:
-      - project-db-data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    restart: unless-stopped
-
-  # Frontend
   frontend:
     build: ./frontend
-    container_name: frontend
     ports:
-      - "8080:80"
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://core-service:4000
+      - REACT_APP_AUTH_URL=http://auth-service:5000
+      - REACT_APP_WS_URL=ws://chat-service:7000
     depends_on:
-      - api-gateway
-    networks:
-      - app-network
-    restart: unless-stopped
+      - auth-service
+      - core-service
+      - chat-service
 
-networks:
-  app-network:
-    driver: bridge
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "5000:5000"
+    environment:
+      - JWT_SECRET=supersecretkey
+      - DB_URL=postgresql://user:password@db/auth
+    depends_on:
+      - db
+
+  core-service:
+    build: ./core-service
+    ports:
+      - "4000:4000"
+    environment:
+      - DB_URL=postgresql://user:password@db/core
+      - MINIO_ENDPOINT=minio
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=3dprints
+    depends_on:
+      - db
+      - minio
+
+  chat-service:
+    build: ./chat-service
+    ports:
+      - "7000:7000"
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data
+    ports:
+      - "9000:9000"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  minio-setup:
+    build: ./minio-setup
+    depends_on:
+      - minio
 
 volumes:
-  user-db-data:
-  project-db-data:
-  uploads:
+  pgdata:
+  minio_data:
