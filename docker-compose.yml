@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  #--- API GATEWAY ---#
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      USER_SERVICE_URL: user-service:50051
+      PROJECT_SERVICE_URL: project-service:50052
+    depends_on:
+      - user-service
+      - project-service
+    networks:
+      - app-network
+
+  #--- USER SERVICE ---#
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    expose:
+      - "50051"
+    depends_on:
+      - user-db
+    environment:
+      DATABASE_URL: "postgresql://user:password@user-db:5432/user_db?schema=public"
+    networks:
+      - app-network
+
+  user-db:
+    image: postgres:14-alpine
+    container_name: user-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_db
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  #--- PROJECT SERVICE ---#
+  project-service:
+    build: ./services/project-service
+    container_name: project-service
+    expose:
+      - "50052"
+    depends_on:
+      - project-db
+    environment:
+      DATABASE_URL: "postgresql://user:password@project-db:5432/project_db?schema=public"
+    networks:
+      - app-network
+
+  project-db:
+    image: postgres:14-alpine
+    container_name: project-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: project_db
+    volumes:
+      - project-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  #--- FRONTEND ---#
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - app-network
+
+volumes:
+  user-db-data:
+  project-db-data:
+
+networks:
+  app-network:
+    driver: bridge
