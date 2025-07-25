@@ -1,86 +1,87 @@
-version: '3.8'
-
 services:
-  #--- API GATEWAY ---#
+  # API Gateway
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
     ports:
-      - "8080:8080"
-    environment:
-      USER_SERVICE_URL: user-service:50051
-      PROJECT_SERVICE_URL: project-service:50052
-    depends_on:
-      - user-service
-      - project-service
+      - "3000:3000"
     networks:
       - app-network
+    restart: unless-stopped
 
-  #--- USER SERVICE ---#
+  # User Service
   user-service:
     build: ./services/user-service
     container_name: user-service
-    expose:
-      - "50051"
+    environment:
+      DATABASE_URL: "postgresql://user:password@user-db:5432/users"
+      JWT_SECRET: "YOUR_SUPER_SECRET_KEY_REPLACE_IT"
     depends_on:
       - user-db
-    environment:
-      DATABASE_URL: "postgresql://user:password@user-db:5432/user_db?schema=public"
     networks:
       - app-network
+    restart: unless-stopped
 
+  # User Service Database
   user-db:
     image: postgres:14-alpine
     container_name: user-db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: user_db
+      POSTGRES_DB: users
     volumes:
       - user-db-data:/var/lib/postgresql/data
     networks:
       - app-network
+    restart: unless-stopped
 
-  #--- PROJECT SERVICE ---#
+  # Project Service
   project-service:
     build: ./services/project-service
     container_name: project-service
-    expose:
-      - "50052"
+    environment:
+      DATABASE_URL: "postgresql://user:password@project-db:5432/projects"
+      JWT_SECRET: "YOUR_SUPER_SECRET_KEY_REPLACE_IT"
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       - project-db
-    environment:
-      DATABASE_URL: "postgresql://user:password@project-db:5432/project_db?schema=public"
     networks:
       - app-network
+    restart: unless-stopped
 
+  # Project Service Database
   project-db:
     image: postgres:14-alpine
     container_name: project-db
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: project_db
+      POSTGRES_DB: projects
     volumes:
       - project-db-data:/var/lib/postgresql/data
     networks:
       - app-network
+    restart: unless-stopped
 
-  #--- FRONTEND ---#
+  # Frontend
   frontend:
     build: ./frontend
     container_name: frontend
     ports:
-      - "3000:3000"
+      - "8080:80"
     depends_on:
       - api-gateway
     networks:
       - app-network
-
-volumes:
-  user-db-data:
-  project-db-data:
+    restart: unless-stopped
 
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  user-db-data:
+  project-db-data:
+  uploads:

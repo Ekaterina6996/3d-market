@@ -1,3 +1,36 @@
+{
+"compilerOptions": {
+"target": "es6",
+"module": "commonjs",
+"outDir": "./dist",
+"rootDir": "./src",
+"strict": true,
+"esModuleInterop": true,
+"skipLibCheck": true
+}
+}
+**`services/user-service/prisma/schema.prisma`**
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String // "Maker" or "Customer"
+  createdAt DateTime @default(now())
+}```
+
+**`services/user-service/src/index.ts`**
+```typescript
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';

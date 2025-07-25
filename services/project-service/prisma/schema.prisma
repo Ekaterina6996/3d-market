@@ -1,0 +1,20 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  title       String
+  fileName    String
+  filePath    String
+  ownerId     Int
+  createdAt   DateTime @default(now())
+  
+  status      String   @default("open") // "open", "in_progress", "completed"
+  makerId     Int?     // The ID of the Maker who accepted the project
+}

@@ -1,26 +1,23 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from './theme';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import AuthPage from './pages/AuthPage';
 import CustomerDashboard from './pages/CustomerDashboard';
 import MakerDashboard from './pages/MakerDashboard';
 
 function App() {
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+
   return (
-    <ThemeProvider theme={theme}>
-      <Router>
-        <Switch>
-          <Route path="/" exact component={HomePage} />
-          <Route path="/login" component={LoginPage} />
-          <Route path="/register" component={RegisterPage} />
-          <Route path="/dashboard/customer" component={CustomerDashboard} />
-          <Route path="/dashboard/maker" component={MakerDashboard} />
-        </Switch>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Routes>
+        <Route path="/auth" element={!token ? <AuthPage /> : <Navigate to="/dashboard" />} />
+        <Route path="/dashboard" element={
+          token ? (userRole === 'Customer' ? <CustomerDashboard /> : <MakerDashboard />) : <Navigate to="/auth" />
+        } />
+        <Route path="*" element={<Navigate to="/dashboard" />} />
+      </Routes>
+    </Router>
   );
 }
 
